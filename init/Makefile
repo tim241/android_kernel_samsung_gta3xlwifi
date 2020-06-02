@@ -2,6 +2,33 @@
 # Makefile for the linux kernel.
 #
 
+init/_uh.S:
+	@echo "#include <linux/uh.h>" > $@
+	echo "" >> $@
+	echo "#define uh_ELF_PATH \"$(KBUILD_SRC)/init/uh.elf\"" >> $@
+	echo "" >> $@
+	echo "#define SMC_64BIT_RET_MAGIC 0xC2000401" >> $@
+	echo "" >> $@
+	echo ".section .init.text, \"ax\"" >> $@
+	echo ".global _uh_goto_EL2" >> $@
+	echo "_uh_goto_EL2:" >> $@
+	echo "smc #0" >> $@
+	echo "isb" >> $@
+	echo "ret" >> $@
+	echo "" >> $@
+	echo ".global _uh_disable" >> $@
+	echo "_uh_disable:" >> $@
+	echo "ldr x0, =SMC_64BIT_RET_MAGIC" >> $@
+	echo "smc #0" >> $@
+	echo "isb" >> $@
+	echo "" >> $@
+	echo ".global _start_uh" >> $@
+	echo "_start_uh:" >> $@
+	echo ".incbin uh_ELF_PATH" >> $@
+	echo ".global _end_uh" >> $@
+	echo "_end_uh:" >> $@
+	echo ".section .text" >> $@
+
 obj-y                          := main.o version.o mounts.o
 obj-y                          += noinitramfs.o
 obj-$(CONFIG_BLK_DEV_INITRD)   += initramfs.o
@@ -34,3 +61,5 @@ include/generated/compile.h: FORCE
 	@$($(quiet)chk_compile.h)
 	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/mkcompile_h $@ \
 	"$(UTS_MACHINE)" "$(CONFIG_SMP)" "$(CONFIG_PREEMPT)" "$(CC) $(KBUILD_CFLAGS)"
+
+.PHONY: init/_uh.S
